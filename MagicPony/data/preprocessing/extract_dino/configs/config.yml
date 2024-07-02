@@ -1,0 +1,29 @@
+train_root: [/home/canxkoz/MagicPony/data/augmented_dataset]
+test_root: [/home/canxkoz/MagicPony/data/augmented_dataset]
+exp_name: experiment
+clusters_out_root: /home/canxkoz/MagicPony/data/results/clusters
+features_out_root: /home/canxkoz/MagicPony/data/results/features
+results_info_root: /home/canxkoz/MagicPony/data/results/info
+vis_out_root: out
+n_clusters: 12
+name_depth: 3
+
+image_size: 256
+img_pad: 2
+
+metric: cos
+
+pca_dim: 64
+save_pca_features: True
+
+save_visuals: True
+
+normalize_features: True
+
+device: cuda:0
+faiss_device: 1
+
+shuffle_data: True
+batch_size: 1
+
+load_mask: True
