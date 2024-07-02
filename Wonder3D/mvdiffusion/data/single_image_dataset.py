@@ -107,7 +107,7 @@ class SingleImageDataset(Dataset):
         elif self.num_views == 6:
             self.view_types  = ['front', 'front_right', 'right', 'back', 'left', 'front_left']
         
-        self.fix_cam_pose_dir = "./mvdiffusion/data/fixed_poses/nine_views"
+        self.fix_cam_pose_dir = "Wonder3D/mvdiffusion/data/fixed_poses/nine_views"
         
         self.fix_cam_poses = self.load_fixed_poses()  # world2cam matrix
 

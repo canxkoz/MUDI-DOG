@@ -60,7 +60,7 @@ from diffusers.utils import (
     logging,
 )
 from diffusers import __version__
-from mvdiffusion.models.unet_mv2d_blocks import (
+from Wonder3D.mvdiffusion.models.unet_mv2d_blocks import (
     CrossAttnDownBlockMV2D,
     CrossAttnUpBlockMV2D,
     UNetMidBlockMV2DCrossAttn,
