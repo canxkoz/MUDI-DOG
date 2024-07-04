@@ -7,6 +7,10 @@ from PIL import Image
 from rembg import remove
 from segment_anything import sam_model_registry, SamPredictor
 
+from typing import Dict, Optional, List
+from dataclasses import dataclass
+
+from Wonder3D.utils.misc import load_config
 from Wonder3D.mvdiffusion.models.unet_mv2d_condition import UNetMV2DConditionModel
 from Wonder3D.mvdiffusion.pipelines.pipeline_mvdiffusion_image import MVDiffusionImagePipeline
 from Wonder3D.mvdiffusion.data.single_image_dataset import SingleImageDataset
@@ -203,3 +207,20 @@ def get_bounding_box(ground_truth_map):
   bbox = [x_min, y_min, w, h, image_witdh, image_height]
 
   return bbox
+
+
+def extract_mask_from_img(img):
+    view = Image.fromarray(img)
+    view = view.convert("L")
+    view = view.point(lambda p: p < 250, '1')
+    view = view.convert("L")
+
+    # image to numpy array
+    view = np.asarray(view)
+    kernel = np.ones((3, 3), np.uint8)
+    mask_cleaned = cv2.morphologyEx(view, cv2.MORPH_OPEN, kernel, iterations=2)
+    mask_cleaned = cv2.morphologyEx(mask_cleaned, cv2.MORPH_CLOSE, kernel, iterations=2)
+    view = Image.fromarray(mask_cleaned)
+    view = view.convert("L")
+
+    return np.array(view)
