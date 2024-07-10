@@ -39,7 +39,7 @@ def arrange(images):
 
 
 def create_dataset(root, debug_subset=False, n_random_samples=None, img_postfix='_rgb.jpg', mask_postfix=None, transform=None, transform_no_norm=None, mask_transform=None):
-    img_names = sorted(glob(osp.join(root, "*","*", "*" + img_postfix)))
+    img_names = sorted(glob(osp.join(root, "*" + img_postfix)))
     if mask_postfix is not None:
         mask_names = sorted(list(Path(root).rglob('*' + mask_postfix)))
         assert len(img_names) == len(mask_names)
@@ -68,7 +68,9 @@ def create_dataloader(root, batch_size, img_postfix, mask_postfix, shuffle=False
 
 
 def save_features(features_out_dir, img_path, img_postfix, name_depth, features_out, save_features_as_npy, dim_in_filename=False):
-    name = img_path.split('/')[-1][:-len(img_postfix)]
+    img_path = "".join(img_path.split("_rgb"))
+    img_postfix = img_postfix[0].split('.')[1]
+    name = img_path.split('/')[-1][:-len(img_postfix)].split(".")[0]
     dirs = img_path.split('/')[-(name_depth + 1):-1]
     file_name = f'{name}_feat'
     if dim_in_filename:
@@ -136,8 +138,7 @@ def extract_features(args, dataloader, model_type, model_path, device, load_mask
             features_out = features_out.reshape(-1, *extractor.num_patches, features_out.shape[-1])
             for j, img_no_norm_ in enumerate(img_no_norm):
                 # save features
-                if features_out_dir is not None:
-                    save_features(features_out_dir, img_path[j], img_postfix, args.name_depth, features_out[j], args.save_features_as_npy, dim_in_filename=args.dim_in_filename)
+                save_features(features_out_dir, img_path[j], img_postfix, args.name_depth, features_out[j], args.save_features_as_npy, dim_in_filename=args.dim_in_filename)
                 # visuals
                 save_visuals_frq = max(int(len(dataloader.dataset) / args.n_images_vis), 1)
                 if vis_out_dir is not None and i % save_visuals_frq == 0:
@@ -150,6 +151,7 @@ def extract_features(args, dataloader, model_type, model_path, device, load_mask
                 all_features += [features]
                 mask = rearrange(mask, 'b 1 h w -> b (h w)')
                 all_masks += [mask]
+
         if log_features:
             all_features = np.concatenate(all_features, axis=0)
             if all_masks:
@@ -196,7 +198,7 @@ def main(args):
     image_size = args.image_size
     batch_size = args.batch_size
     device = args.device
-    features_out_dir = Path(args.features_out_root) / exp_name
+    features_out_dir = None
     pca_out_path = Path(args.results_info_root) / exp_name / 'pca.faiss'
     vis_out_dir = Path(args.vis_out_root) / exp_name
 

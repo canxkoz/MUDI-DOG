@@ -13,24 +13,26 @@ import torch
 import os
 import uuid
 import argparse
+import subprocess
 
 import warnings
 warnings.filterwarnings("ignore")
 
 
 if __name__ == "__main__":
-
     args = argparse.ArgumentParser()
     args.add_argument("--config", type=str, default="/YOUR-HOME-PATH/MUDI-DOG/Wonder3D/configs/mvdiffusion-joint-ortho-6views.yaml")
-    args.add_argument("--examples_path", type=str, default="/YOUR-HOME-PATH/MUDI-DOG/examples")
+    args.add_argument("--input_path", type=str, default="/YOUR-HOME-PATH/MUDI-DOG/examples/horse.jpeg")
     args.add_argument("--output_path", type=str, default="/YOUR-HOME-PATH/MUDI-DOG/magicpony_inputs")
+    args.add_argument("--use_dino_features", type=bool, default=True)
     args.add_argument("--view_count", type=int, default=3)
-    args.add_argument("--object", type=str, default="bird")
+    args.add_argument("--object", type=str, default="horse")
     args = args.parse_args()
 
     config = args.config
-    examples_path = args.examples_path
+    input_path = args.input_path
     output_path = args.output_path
+    use_dino_features = args.use_dino_features
     object_name = args.object
     view_count = args.view_count
 
@@ -59,10 +61,8 @@ if __name__ == "__main__":
     # prepare the input image for the pipeline
     predictor = sam_init()
 
-    orj_image_path = f"{examples_path}/{object_name}.png" # path to the original image
-
     # load original image
-    orj_image = Image.open(orj_image_path).convert("RGB")
+    orj_image = Image.open(input_path).convert("RGB")
 
     # preprocess the image for wonder3d
     input_image_320 = wonder3d_preprocess(predictor, orj_image, segment=True, rescale=False)
@@ -93,6 +93,8 @@ if __name__ == "__main__":
         for item, _ in index_score_dict.items():
             new_views.append(views[item])
 
+        views = new_views
+
     # resize the original image to 256x256
     orj_view = orj_image.resize((256, 256))
 
@@ -120,10 +122,36 @@ if __name__ == "__main__":
         mask = extract_mask_from_img(view)
         bbox = get_bounding_box(mask)
 
-        Image.fromarray(view).save(f"{output_path}/{image_id}_view_{i+1}.png")
+        Image.fromarray(view).save(f"{output_path}/{image_id}_view_{i+1}_rgb.png")
         Image.fromarray(mask).save(f"{output_path}/{image_id}_view_{i+1}_mask.png")
 
         with open(f"{output_path}/{image_id}_view_{i+1}_bbox.txt", "a") as f:
             f.write(str(f"{image_id}_view_{i+1}") + " ")
             f.write(" ".join([str(i) for i in bbox]))
             f.write(" " + str(-1))
+
+    if use_dino_features:
+        # extract dino features
+        dino_configs = {
+            "train_root": [""], # if you want to train your own pca model, you can provide the path to the training data
+            "exp_name": "experiment",
+            "img_postfix_test": "_rgb.png",
+            "mask_postfix_test": "_mask.png",
+            "test_root": output_path,
+            "features_out_root": "",
+            "clusters_out_root": "",
+            "results_info_root": "",
+            "vis_out_root": "out", # useless but required
+            "load_pca_path": f"/YOUR-HOME-PATH/MUDI-DOG/pca/{object_name}.faiss",
+            "layer": "5",
+            "pca_dim": "16",
+            "name_depth": "3"
+        }
+
+        dino_config_path = "/YOUR-HOME-PATH/MUDI-DOG/dino_config.yml"
+
+        with open(dino_config_path, "w") as f:
+            for key, value in dino_configs.items():
+                f.write(f"{key}: {value}\n")
+
+        subprocess.run(["python", "MagicPony/data/preprocessing/extract_dino/extract.py", "-c", dino_config_path, "--use_pca", "--load_mask", "--dim_in_filename", "--normalize_features"])
