@@ -21,11 +21,11 @@ warnings.filterwarnings("ignore")
 
 if __name__ == "__main__":
     args = argparse.ArgumentParser()
-    args.add_argument("--config", type=str, default="/YOUR-HOME-PATH/MUDI-DOG/Wonder3D/configs/mvdiffusion-joint-ortho-6views.yaml")
-    args.add_argument("--input_path", type=str, default="/YOUR-HOME-PATH/MUDI-DOG/examples/horse.jpeg")
-    args.add_argument("--output_path", type=str, default="/YOUR-HOME-PATH/MUDI-DOG/magicpony_inputs")
+    args.add_argument("--config", type=str, default="Wonder3D/configs/mvdiffusion-joint-ortho-6views.yaml")
+    args.add_argument("--input_path", type=str, default="examples/horse.jpg")
+    args.add_argument("--output_path", type=str, default="magicpony_inputs")
     args.add_argument("--use_dino_features", type=bool, default=True)
-    args.add_argument("--view_count", type=int, default=3)
+    args.add_argument("--view_count", type=int, default=6)
     args.add_argument("--object", type=str, default="horse")
     args = args.parse_args()
 
@@ -142,16 +142,40 @@ if __name__ == "__main__":
             "clusters_out_root": "",
             "results_info_root": "",
             "vis_out_root": "out", # useless but required
-            "load_pca_path": f"/YOUR-HOME-PATH/MUDI-DOG/pca/{object_name}.faiss",
+            "load_pca_path": f"pca/{object_name}.faiss",
             "layer": "5",
             "pca_dim": "16",
             "name_depth": "3"
         }
 
-        dino_config_path = "/YOUR-HOME-PATH/MUDI-DOG/dino_config.yml"
+        dino_config_path = "dino_config.yml"
 
         with open(dino_config_path, "w") as f:
             for key, value in dino_configs.items():
                 f.write(f"{key}: {value}\n")
 
         subprocess.run(["python", "MagicPony/data/preprocessing/extract_dino/extract.py", "-c", dino_config_path, "--use_pca", "--load_mask", "--dim_in_filename", "--normalize_features"])
+
+        magicpony_config_path = f"MagicPony/config/{object_name}s/test_{object_name}.yml"
+
+        with open(magicpony_config_path, "r") as f:
+            magicpony_config = OmegaConf.load(f)
+
+        magicpony_config.view_count = view_count
+        magicpony_config.checkpoint_dir = f"MagicPony/checkpoints/{object_name}s"
+        magicpony_config.checkpoint_name = f"{object_name}_checkpoint.pth"
+        magicpony_config.test_data_dir = output_path
+        magicpony_config.test_result_dir = f"{object_name}_results"
+
+        with open(magicpony_config_path, "w") as f:
+            OmegaConf.save(magicpony_config, f)
+
+        # if test_result_dir does not exist, create it
+        if not os.path.exists(magicpony_config.test_result_dir):
+            os.makedirs(magicpony_config.test_result_dir)
+
+        # get which GPU is available (0, 1, 2, 3, ...)
+        gpu = torch.cuda.current_device()
+
+        # run the MagicPony pipeline
+        subprocess.run(["python", "MagicPony/run.py", "--config", magicpony_config_path, "--gpu", gpu, "--num_workers", "4"])
