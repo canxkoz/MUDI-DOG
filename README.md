@@ -1,4 +1,4 @@
-# MUDİ-DOG
+# MUDI-DOG
 
 This repository contains the `infer.py` script used for running inferences on a single image using Wonder3D, Yolo-world, Dino, Magicpony and can generate 3D objects.
 

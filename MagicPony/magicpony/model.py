@@ -274,7 +274,7 @@ class MagicPony:
             pass
         else:
             rgb_loss = rgb_loss * mask_both_binary.unsqueeze(2)
-        losses['rgb_loss'] = rgb_loss.view(batch_size, num_frames, -1).mean(2)
+        losses['rgb_loss'] = rgb_loss.reshape(batch_size, num_frames, -1).mean(2)
 
         ## flow loss between consecutive frames
         if flow_pred is not None:

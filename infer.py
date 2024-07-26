@@ -14,6 +14,7 @@ import os
 import uuid
 import argparse
 import subprocess
+import yaml
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -22,11 +23,11 @@ warnings.filterwarnings("ignore")
 if __name__ == "__main__":
     args = argparse.ArgumentParser()
     args.add_argument("--config", type=str, default="Wonder3D/configs/mvdiffusion-joint-ortho-6views.yaml")
-    args.add_argument("--input_path", type=str, default="examples/horse.jpg")
+    args.add_argument("--input_path", type=str, default="examples/bird.png")
     args.add_argument("--output_path", type=str, default="magicpony_inputs")
     args.add_argument("--use_dino_features", type=bool, default=True)
     args.add_argument("--view_count", type=int, default=6)
-    args.add_argument("--object", type=str, default="horse")
+    args.add_argument("--object", type=str, default="bird")
     args = args.parse_args()
 
     config = args.config
@@ -106,13 +107,14 @@ if __name__ == "__main__":
     # extract bounding box from the mask
     bbox = get_bounding_box(mask)
 
-    image_id = str(uuid.uuid4())
+    int_uuid = uuid.uuid4().int
+    image_id = str(int_uuid)
 
     # save the original image
     orj_view.save(f"{output_path}/{image_id}_rgb.png")
     Image.fromarray(mask).save(f"{output_path}/{image_id}_mask.png")
 
-    with open(f"{output_path}/{image_id}_bbox.txt", "w") as f:
+    with open(f"{output_path}/{image_id}_box.txt", "w") as f:
             f.write(f"{image_id}" + " ")
             f.write(" ".join([str(i) for i in bbox]))
             f.write(" " + str(-1))
@@ -125,7 +127,7 @@ if __name__ == "__main__":
         Image.fromarray(view).save(f"{output_path}/{image_id}_view_{i+1}_rgb.png")
         Image.fromarray(mask).save(f"{output_path}/{image_id}_view_{i+1}_mask.png")
 
-        with open(f"{output_path}/{image_id}_view_{i+1}_bbox.txt", "a") as f:
+        with open(f"{output_path}/{image_id}_view_{i+1}_box.txt", "a") as f:
             f.write(str(f"{image_id}_view_{i+1}") + " ")
             f.write(" ".join([str(i) for i in bbox]))
             f.write(" " + str(-1))
@@ -156,26 +158,32 @@ if __name__ == "__main__":
 
         subprocess.run(["python", "MagicPony/data/preprocessing/extract_dino/extract.py", "-c", dino_config_path, "--use_pca", "--load_mask", "--dim_in_filename", "--normalize_features"])
 
-        magicpony_config_path = f"MagicPony/config/{object_name}s/test_{object_name}.yml"
+    magicpony_config_path = f"MagicPony/config/{object_name}s/test_{object_name}.yml"
 
-        with open(magicpony_config_path, "r") as f:
-            magicpony_config = OmegaConf.load(f)
+    with open(magicpony_config_path, "r") as f:
+        magicpony_config = yaml.safe_load(f)
 
-        magicpony_config.view_count = view_count
-        magicpony_config.checkpoint_dir = f"MagicPony/checkpoints/{object_name}s"
-        magicpony_config.checkpoint_name = f"{object_name}_checkpoint.pth"
-        magicpony_config.test_data_dir = output_path
-        magicpony_config.test_result_dir = f"{object_name}_results"
+    magicpony_config["view_count"] = view_count
+    magicpony_config["checkpoint_dir"] = f"MagicPony/checkpoints/{object_name}s"
+    magicpony_config["checkpoint_name"] = f"{object_name}_checkpoint.pth"
+    magicpony_config["test_data_dir"] = output_path
+    magicpony_config["test_result_dir"] = f"{object_name}_results"
+    magicpony_config["batch_size"] = 1
+    magicpony_config["load_dino_feature"] = use_dino_features
+    
 
-        with open(magicpony_config_path, "w") as f:
-            OmegaConf.save(magicpony_config, f)
+    with open(magicpony_config_path, "w") as f:
+        yaml.safe_dump(magicpony_config, f, default_flow_style=True)
 
-        # if test_result_dir does not exist, create it
-        if not os.path.exists(magicpony_config.test_result_dir):
-            os.makedirs(magicpony_config.test_result_dir)
+    # if test_result_dir does not exist, create it
+    if not os.path.exists(magicpony_config["test_result_dir"]):
+        os.makedirs(magicpony_config["test_result_dir"])
 
-        # get which GPU is available (0, 1, 2, 3, ...)
-        gpu = torch.cuda.current_device()
+    # get which GPU is available (0, 1, 2, 3, ...)
+    gpu = torch.cuda.current_device()
 
-        # run the MagicPony pipeline
-        subprocess.run(["python", "MagicPony/run.py", "--config", magicpony_config_path, "--gpu", gpu, "--num_workers", "4"])
+    # cuda empty cache
+    torch.cuda.empty_cache()
+
+    # run the MagicPony pipeline
+    subprocess.run(["python", "MagicPony/run.py", "-c", str(magicpony_config_path), "--gpu", str(gpu)])

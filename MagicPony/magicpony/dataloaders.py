@@ -272,14 +272,13 @@ class ImageDataset(Dataset):
 
     def _parse_folder(self, path):
         image_path_suffix = self.image_loader[0]
-        result = sorted(glob(os.path.join(path, '**')))
+        result = [path]
         grouped_result = []
         for folder in result:
             if os.path.isdir(folder):
                 files = sorted(glob(os.path.join(folder, '*'+image_path_suffix)))
                 if len(files) > 0:
                     grouped_result.append(files)
-
         new_grouped_result = []
         for _, files in enumerate(grouped_result):
             if '*' in image_path_suffix:
@@ -306,7 +305,6 @@ class ImageDataset(Dataset):
 
     def __getitem__(self, index):
         paths = self.samples[index % len(self.samples)]
-
         if self.novel_view_count == 3:
             paths.pop(2)
             paths.pop(3)
@@ -363,7 +361,8 @@ class ImageDataset(Dataset):
         # get first 6 mask in the masks
         masks = masks[:, :view_count, :, :]
         images = images[:, :view_count, :, :]
-        dino_features = dino_features[:view_count, :, :, :]
+        if dino_features is not None:
+            dino_features = dino_features[:view_count, :, :, :]
         
         # remove the first dimension
         images = images.squeeze(0)

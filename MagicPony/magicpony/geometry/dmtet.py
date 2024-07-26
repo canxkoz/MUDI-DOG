@@ -200,7 +200,7 @@ class DMTetGeometry(torch.nn.Module):
             scale = self.grid_scale
         else:
             self.grid_scale = scale
-        tets = np.load('data/tets/{}_tets.npz'.format(grid_res))
+        tets = np.load('MagicPony/data/tets/{}_tets.npz'.format(grid_res))
         self.verts = torch.tensor(tets['vertices'], dtype=torch.float32, device='cuda') * scale  # verts original scale (-0.5, 0.5)
         self.indices = torch.tensor(tets['indices'], dtype=torch.long, device='cuda')
         self.generate_edges()
