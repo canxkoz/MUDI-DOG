@@ -19,10 +19,30 @@ this section will be added soon.
     cd MUDI-DOG
     ```
 
-2. Install the required packages:
+2. Create a Conda environment and install the required packages:
 
     ```bash
-    pip install -r requirements.txt (this section will be added soon)
+    conda create -n mudidog python=3.10
+    conda activate mudidog
+    ```
+
+3. Install the required packages for Wonder3D and Yolo-world:
+
+    ```bash
+    pip install -r requirements.txt
+    ```
+
+4. Install the required packages for MagicPony:
+
+    ```bash
+    pip install git+https://github.com/NVlabs/nvdiffrast/
+    pip install --global-option="--no-networks" git+https://github.com/NVlabs/tiny-cuda-nn@v1.6#subdirectory=bindings/torch
+    imageio_download_bin freeimage
+
+5. Install PyTorch3D
+
+    ```bash
+    pip install "git+https://github.com/facebookresearch/pytorch3d.git@stable"
     ```
 
 ## Usage
@@ -45,4 +65,12 @@ python infer.py --config Wonder3D/configs/mvdiffusion-joint-ortho-6views.yaml --
 
 ## Important Notes
 
-- Our Magicpony checkpoints will added to the repository soon.
+- for use magicpony, you need to install tets to `MagicPony/data/tets` folder with;
+    ```bash
+    wget https://download.cs.stanford.edu/viscam/AnimalKingdom/magicpony/data/tets.zip && unzip -q tets.zip
+    ```
+
+- Also you need to install the pretrained models to `MagicPony/checkpoints/object_name` folder from the link below;
+    ```bash
+    https://drive.google.com/file/d/1zpmkPGq5Gc0T5FF5EUfR1mjVmBIWhKPh/view?usp=sharing
+    ```
