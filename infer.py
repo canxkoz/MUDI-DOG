@@ -40,6 +40,11 @@ if __name__ == "__main__":
     # if output path does not exist, create it
     if not os.path.exists(output_path):
         os.makedirs(output_path)
+    else:
+        # remove files in the output path
+        files = os.listdir(output_path)
+        for file in files:
+            os.remove(f"{output_path}/{file}")
 
     # device
     device= "cuda" if torch.cuda.is_available() else "cpu"
@@ -73,21 +78,28 @@ if __name__ == "__main__":
     normal_1, normal_2, normal_3, normal_4, normal_5, normal_6, \
     _, _ = run_wonder3d_pipeline(pipeline, cfg, input_image_320, 3, 50, 42, 256)
 
+    # cuda empty cache
+    torch.cuda.empty_cache()
+
     views = [view_2, view_3, view_4, view_5, view_6]
-
-    index_score_dict = {}
-    for i, view in enumerate(views):
-        results = model.predict(view, verbose=False, device=device)
-        for j, c in enumerate(results[0].boxes.cls):
-            if c.cpu().numpy() == 1.0 and results[0].boxes.conf.cpu().numpy()[j] > 0.1:
-                if i in index_score_dict and index_score_dict[i] < results[0].boxes.conf.cpu().numpy()[j]:
-                    continue
-                index_score_dict[i] = results[0].boxes.conf.cpu().numpy()[j]
-
-    if len(index_score_dict) < 3:
-        raise ValueError("The object is not detected in at least 3 views, please try again with a different image.")
     
     if view_count == 3:
+        # get the 3 views with the highest confidence with YOLO-World
+        index_score_dict = {}
+        for i, view in enumerate(views):
+            results = model.predict(view, verbose=False, device=device)
+            for j, c in enumerate(results[0].boxes.cls):
+                if c.cpu().numpy() == 1.0 and results[0].boxes.conf.cpu().numpy()[j] > 0.1:
+                    if i in index_score_dict and index_score_dict[i] < results[0].boxes.conf.cpu().numpy()[j]:
+                        continue
+                    index_score_dict[i] = results[0].boxes.conf.cpu().numpy()[j]
+
+        # cuda empty cache
+        torch.cuda.empty_cache()
+
+        if len(index_score_dict) < 3:
+            raise ValueError("The object is not detected in at least 3 views, please try again with a different image.")
+
         # get the 3 views with the highest confidence
         index_score_dict = dict(sorted(index_score_dict.items(), key=lambda x: x[1], reverse=True)[:3])
         new_views = []
@@ -157,6 +169,9 @@ if __name__ == "__main__":
                 f.write(f"{key}: {value}\n")
 
         subprocess.run(["python", "MagicPony/data/preprocessing/extract_dino/extract.py", "-c", dino_config_path, "--use_pca", "--load_mask", "--dim_in_filename", "--normalize_features"])
+
+        # cuda empty cache
+        torch.cuda.empty_cache()
 
     magicpony_config_path = f"MagicPony/config/{object_name}s/test_{object_name}.yml"
 
