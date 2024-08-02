@@ -580,11 +580,22 @@ class MagicPony:
             fnames = [f'{total_iter:07d}_{fid:10d}' for fid in collapseBF(global_frame_id.int())][:b0]
             def save_image(name, image):
                 misc.save_images(save_dir, collapseBF(image)[:b0].clamp(0,1).detach().cpu().numpy(), suffix=name, fnames=fnames)
+            def save_video(name, frames):
+                misc.save_videos(save_dir, frames.clamp(0,1).detach().cpu().numpy(), suffix=name, fnames=fnames)
 
             save_image('image_gt', image_gt)
             save_image('image_pred', image_pred)
             save_image('mask_gt', mask_gt.unsqueeze(2).repeat(1,1,3,1,1))
             save_image('mask_pred', mask_pred.unsqueeze(2).repeat(1,1,3,1,1))
+            instance_normal_rotation = self.render_rotation_frames('geo_normal', shape, texture, light, (h, w), im_features=im_features, prior_shape=prior_shape, num_frames=15, b=1)
+            instance_normal_rotation = instance_normal_rotation.unsqueeze(0)
+            save_video('instance_normal_rotation', instance_normal_rotation)
+            prior_image_rotation = self.render_rotation_frames('shaded', prior_shape, texture, light, (h, w), im_features=im_features, num_frames=15, b=1)
+            prior_image_rotation = prior_image_rotation.unsqueeze(0)
+            save_video('prior_image_rotation', prior_image_rotation)
+            prior_normal_rotation = self.render_rotation_frames('geo_normal', prior_shape, texture, light, (h, w), im_features=im_features, num_frames=15, b=1)
+            prior_normal_rotation = prior_normal_rotation.unsqueeze(0)
+            save_video('prior_normal_rotation', prior_normal_rotation)
 
             if self.render_flow and flow_gt is not None:
                 flow_gt_viz = torch.cat([flow_gt, torch.zeros_like(flow_gt[:,:,:1])], 2) + 0.5  # -0.5~1.5
