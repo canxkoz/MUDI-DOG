@@ -583,10 +583,32 @@ class MagicPony:
             def save_video(name, frames):
                 misc.save_videos(save_dir, frames.clamp(0,1).detach().cpu().numpy(), suffix=name, fnames=fnames)
 
+            rot_rep = self.netInstance.rot_rep
+
+            render_modes = ['geo_normal', 'kd', 'shading']
+            rendered = self.render(render_modes, shape, texture, mvp, w2c, campos, (h, w), im_features=im_features, light=light, prior_shape=prior_shape)
+            geo_normal, albedo, shading = map(lambda x: expandBF(x, batch_size, num_frames), rendered)
+
+            if 'posed_bones' in aux_viz:
+                rendered_bone_image = self.render_bones(mvp, aux_viz['posed_bones'], (h, w))
+                rendered_bone_image_mask = (rendered_bone_image < 1).any(1, keepdim=True).float()
+                geo_normal = rendered_bone_image_mask*0.8 * rendered_bone_image + (1-rendered_bone_image_mask*0.8) * geo_normal
+
+            ## draw marker on images with randomly sampled pose
+            if rot_rep in ['quadlookat', 'octlookat']:
+                rand_pose_flag = forward_aux['rand_pose_flag']
+                rand_pose_marker_mask = torch.zeros_like(geo_normal)
+                rand_pose_marker_mask[:,:,:,:16,:16] = 1.
+                rand_pose_marker_mask = rand_pose_marker_mask * rand_pose_flag.view(batch_size, num_frames, 1, 1, 1)
+                red = torch.FloatTensor([1,0,0]).view(1,1,3,1,1).to(geo_normal.device)
+                geo_normal = rand_pose_marker_mask * red + (1-rand_pose_marker_mask) * geo_normal
+
             save_image('image_gt', image_gt)
             save_image('image_pred', image_pred)
             save_image('mask_gt', mask_gt.unsqueeze(2).repeat(1,1,3,1,1))
             save_image('mask_pred', mask_pred.unsqueeze(2).repeat(1,1,3,1,1))
+            save_image('instance_geo_normal', geo_normal)
+            
             instance_normal_rotation = self.render_rotation_frames('geo_normal', shape, texture, light, (h, w), im_features=im_features, prior_shape=prior_shape, num_frames=15, b=1)
             instance_normal_rotation = instance_normal_rotation.unsqueeze(0)
             save_video('instance_normal_rotation', instance_normal_rotation)

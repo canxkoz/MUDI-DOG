@@ -305,13 +305,6 @@ class ImageDataset(Dataset):
 
     def __getitem__(self, index):
         paths = self.samples[index % len(self.samples)]
-        if self.novel_view_count == 3:
-            paths.pop(2)
-            paths.pop(3)
-        elif self.novel_view_count == 6:
-            pass
-        else:
-            raise ValueError("novel_view_count should be 3 or 6")
         
         images = self._load_ids(paths, self.image_loader, transform=self.image_transform).unsqueeze(0)
         masks = self._load_ids(paths, self.mask_loader, transform=self.mask_transform).unsqueeze(0)

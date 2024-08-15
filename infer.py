@@ -178,7 +178,6 @@ if __name__ == "__main__":
     with open(magicpony_config_path, "r") as f:
         magicpony_config = yaml.safe_load(f)
 
-    magicpony_config["view_count"] = view_count
     magicpony_config["checkpoint_dir"] = f"MagicPony/checkpoints/{object_name}s"
     magicpony_config["checkpoint_name"] = f"{object_name}_checkpoint.pth"
     magicpony_config["test_data_dir"] = output_path

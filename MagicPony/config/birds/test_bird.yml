@@ -79,7 +79,7 @@ deform_epochs: [6, 1000]  # no deformation fist
 sym_deform: true
 
 enable_articulation: true
-articulation_epochs: [2, 1000]
+articulation_epochs: [0, 1000]
 articulation_arch: attention  # 'attention', 'mlp'
 articulation_feature_mode: sample+global  # 'global', 'sample', 'sample+global'
 num_layers_arti: 4
