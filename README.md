@@ -6,10 +6,6 @@ This repository contains the `infer.py` script used for running inferences on a 
 
 The `infer.py` script allows users to perform inference on input images with various configurations and settings. The script uses Wonder3d, Yolo-world, Dino, Magicpony and can generate 3D objects.
 
-## Requirements
-
-this section will be added soon.
-
 ## Installation
 
 1. Clone the repository:
@@ -74,3 +70,5 @@ python infer.py --config Wonder3D/configs/mvdiffusion-joint-ortho-6views.yaml --
     ```bash
     https://drive.google.com/file/d/1zpmkPGq5Gc0T5FF5EUfR1mjVmBIWhKPh/view?usp=sharing
     ```
+
+- The model for the horses will be added soon.
