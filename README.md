@@ -71,4 +71,7 @@ python infer.py --config Wonder3D/configs/mvdiffusion-joint-ortho-6views.yaml --
     https://drive.google.com/file/d/1zpmkPGq5Gc0T5FF5EUfR1mjVmBIWhKPh/view?usp=sharing
     ```
 
-- The model for the horses will be added soon.
+- You can generate horses using the following model;
+     ```bash
+    https://drive.google.com/file/d/1Qpp1wNIQGjOY9r0mfb5iY-JltwL96J_r/view?usp=sharing
+    ```
